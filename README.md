@@ -1,8 +1,7 @@
 # ScaleTune
-Job Plugin name: "ScaleTune" for VOCALOID4 Editor
+"ScaleTune" Job Plugin for VOCALOID Editor
 
 You can use this Job Plugin freely.
-(C) 2017 Sajna Priya Lakshmi
 
 With regard to all obstacles, damages, defects, etc. caused by using this plug-in, neither me nor any party concerned and any organization or organization to which I belong, will bear no responsibility.
 Please use at your own risk.
@@ -15,3 +14,5 @@ In "Manage Job plugin" of the VOCALOID4 Editor, add "ScaleTune.lua" of WIN folde
 
 [How to uninstall]
 Select "ScaleTune" under "Manage Job plugin" of VOCALID4 Editor and delete "ScaleTune".
+
+(C) 2017 Sajna Priyalakshmi
