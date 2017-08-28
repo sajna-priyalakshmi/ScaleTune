@@ -95,7 +95,7 @@ function main(processParam, envParam)
         if retCode ~= 0 then
             return 0
         end
-        retCode = VSMessageBox("ScaleTune settings has been initialized.\nDo you wanna continue?" , 1)
+        retCode = VSMessageBox("Setting file has been initialized.\n\"" .. dataFilePath .. configFn .. "\"\n\nDo you wanna continue?" , 1)
         if retCode ~= 1 then
             return 0
         end
