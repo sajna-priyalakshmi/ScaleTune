@@ -8,9 +8,9 @@
 --*
 
 -- the path of tuning set file
-osWin, osMac = "win", "mac"
+osWin, osMac = 1, 2
 myOs = osMac -- here set os kind
-if myOs == "win" then
+if myOs == osWin then
     dataFilePath = os.getenv("APPDATA").."\\VOCALOIDJOBP\\"
     os.execute("CMD /C \"MKDIR %appdata%\\VOCALOIDJOBP\\ > NUL 2>&1")
 else
