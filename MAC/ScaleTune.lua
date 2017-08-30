@@ -27,7 +27,8 @@ configDefault = {
 
 -- tune setting file
 tuningSetFn = "V4EJobPluginScaleTuneSet.dat" -- name of tuning set file
-tuningSetColumnStr = "name,offset,C,C#Db,D,D#Eb,E,F,F#Gb,G,G#Ab,A,A#Bb,B"
+tuningSetNotes = "C,C#Db,D,D#Eb,E,F,F#Gb,G,G#Ab,A,A#Bb,B"
+tuningSetHeadLine = "name,offset," .. tuningSetNotes
 tuningSetDataList = {} -- tuning set data list
 dataListDefault = {
     "Equal 12,0,0,0,0,0,0,0,0,0,0,0,0,0",
@@ -81,7 +82,7 @@ function main(processParam, envParam)
     tempDir    = envParam.tempDir    -- Temporary directory path available for Job Plugin
     apiVersion = envParam.apiVersion -- Current Job Plugin version
 
-    tuningSetColumn = split(tuningSetColumnStr, ',')
+    tuningSetColumn = split(tuningSetHeadLine, ',')
 
     local retCode
     
@@ -252,23 +253,20 @@ end
 --*
 function showConfirmationDlg(title, offset, centList)
     local confirmationResult
-    local msgStr = "Perform scale tuning with this setting\n\n"
-    
-    msgStr = msgStr .. "\"" .. title .. "\"" .. "\n"
-    msgStr = msgStr .. "[C]     " .. centList[1] .. " cent" ..  "\n"
-    msgStr = msgStr .. "[C#/Db] " .. centList[2] .. " cent" ..  "\n"
-    msgStr = msgStr .. "[D]     " .. centList[3] .. " cent" ..  "\n"
-    msgStr = msgStr .. "[D#/Eb] " .. centList[4] .. " cent" ..  "\n"
-    msgStr = msgStr .. "[E]     " .. centList[5] .. " cent" ..  "\n"
-    msgStr = msgStr .. "[F]     " .. centList[6] .. " cent" ..  "\n"
-    msgStr = msgStr .. "[F#/Gb] " .. centList[7] .. " cent" ..  "\n"
-    msgStr = msgStr .. "[G]     " .. centList[8] .. " cent" ..  "\n"
-    msgStr = msgStr .. "[G#/Ab] " .. centList[9] .. " cent" ..  "\n"
-    msgStr = msgStr .. "[A]     " .. centList[10] .. " cent" ..  "\n"
-    msgStr = msgStr .. "[A#/Bb] " .. centList[11] .. " cent" ..  "\n"
-    msgStr = msgStr .. "[B]     " .. centList[12] .. " cent" ..  "\n"
-    msgStr = msgStr .. "offset:" .. offset .. " cent" .. "\n\n"
-    msgStr = msgStr .. "from " .. beginPosTick .. " to " .. endPosTick .. " ticks."
+    local msgStr = "Perform scale tuning"
+    .. " from " .. beginPosTick .. " to " .. endPosTick .. " ticks" .. " with this setting:\n\n"
+    .. "\"" .. title .. "\"" .. "\n\n"
+    .. "cent value difference from Equal Temperament:\n"
+
+    local lineFormat = "%9s: %s\n"
+    local noteNameList = split(tuningSetNotes, ",")
+    for n = 1, #centList, 1 do
+        msgStr = msgStr .. string.format(lineFormat, noteNameList[n], centList[n])
+    end
+
+    msgStr = msgStr .. "\n"
+    .. "setting file: "  .. dataFilePath .. configFn .. "\n"
+
     confirmationResult = VSMessageBox(msgStr, 1)
 
     return (confirmationResult == 2) and 1 or 0
@@ -448,7 +446,7 @@ function saveTuningSetFile(indexToPutAtTheTop)
     end
 
     local f = io.open(dataFilePath..tuningSetFn, "w")
-    f:write(tuningSetColumnStr .. "\n") -- write header
+    f:write(tuningSetHeadLine .. "\n") -- write header
     
     for i = 1, #tuningSetDataList, 1 do
         if (f ~=  nil) and (trim(tuningSetDataList[i]) ~= "") then
