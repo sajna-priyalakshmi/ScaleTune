@@ -8,29 +8,28 @@
 --*
 
 -- the path of tuning set file
-osWin, osMac = 1, 2
-myOs = osMac -- here set os kind
-if myOs == osWin then
-    dataFilePath = os.getenv("APPDATA").."\\VOCALOIDJOBP\\"
+OS_WIN, OS_MAC = 1, 2
+MY_OS = OS_MAC	-- HERE SET OS KIND
+if MY_OS == OS_WIN then
+    DATA_FILE_PATH = os.getenv("APPDATA").."\\VOCALOIDJOBP\\"
     os.execute("CMD /C \"MKDIR %appdata%\\VOCALOIDJOBP\\ > NUL 2>&1")
 else
-    dataFilePath = "/Users/Shared/JobPlugindat/"
-    os.execute("mkdir " .. dataFilePath)
+    DATA_FILE_PATH = "/Users/Shared/JobPlugindat/"
+    os.execute("mkdir " .. DATA_FILE_PATH)
 end
 
 -- config file
-configFn = "V4EJobPluginScaleTuneConfig.dat" -- name of config file
-configDataList = {}
-configDefault = {
+CONFIG_FN = "V4EJobPluginScaleTuneConfig.dat"	-- name of config file
+CONFIG_DATA_LIST = {}
+CONFIG_DEFAULT = {
     skipConfirmationDlg = 0,
 }
 
 -- tune setting file
-tuningSetFn = "V4EJobPluginScaleTuneSet.dat" -- name of tuning set file
-tuningSetNotes = "C,C#Db,D,D#Eb,E,F,F#Gb,G,G#Ab,A,A#Bb,B"
-tuningSetHeadLine = "name,offset," .. tuningSetNotes
-tuningSetDataList = {} -- tuning set data list
-dataListDefault = {
+TUNING_SET_FN = "V4EJobPluginScaleTuneSet.dat"	-- name of tuning set file
+TUNING_SET_HEADER = {"name", "offset", "C", "C#Db", "D", "D#Eb", "E", "F", "F#Gb", "G", "G#Ab", "A", "A#Bb", "B"}
+TUNING_SET_DATA_LIST = {}	-- tuning set data list
+TUNING_SET_DATA_LIST_DEFAULT = {
     "Equal 12,0,0,0,0,0,0,0,0,0,0,0,0,0",
     "Werkmeister 1-3,7,0,-10,-8,-6,-10,-2,-12,-4,-8,-12,-4,-8",
     "Kirnberger 3,6.9,0,-7.7,-6.8,-6,-13.7,-2,-9.7,-3.4,-8,-10.3,-4,-11.7",
@@ -45,9 +44,6 @@ dataListDefault = {
     "Pythagorean with D#,-5,0,14,4,18,8,-2,12,2,16,6,-4,10",
 }
 
-pitMax = 8191
-pitMin = -8192
-
 --*
 --* Manifest
 --* The Job plugin script must have a function named "manifest"
@@ -61,7 +57,7 @@ function manifest()
         pluginVersion = [[1.0.0.0]],
         apiVersion    = [[3.0.1.0]]
     }
-    
+
     return myManifest
 end
 
@@ -71,36 +67,34 @@ end
 --*
 function main(processParam, envParam)
     -- Information on the selection range is given to the first argument of "main()"
-    -- *If it is not selected, the entire song part
-    beginPosTick = processParam.beginPosTick -- tick of the beginning position of selection
-    endPosTick   = processParam.endPosTick   -- tick of the ending position of selection
-    songPosTick  = processParam.songPosTick  -- tick fo the current song position
+    -- *If it is not selected, entire the song part is given
+    beginPosTick = processParam.beginPosTick	-- tick of the beginning position of selection
+    endPosTick   = processParam.endPosTick	-- tick of the ending position of selection
+    songPosTick  = processParam.songPosTick	-- tick fo the current song position
 
     -- Execution environment information is given to the second argument of "main()"
-    scriptDir  = envParam.scriptDir  -- directory path where this script is placed
-    scriptName = envParam.scriptName -- name of this script
-    tempDir    = envParam.tempDir    -- Temporary directory path available for Job Plugin
-    apiVersion = envParam.apiVersion -- Current Job Plugin version
-
-    tuningSetColumn = split(tuningSetHeadLine, ',')
+    scriptDir  = envParam.scriptDir	-- directory path where this script is placed
+    scriptName = envParam.scriptName	-- name of this script
+    tempDir    = envParam.tempDir	-- Temporary directory path available for Job Plugin
+    apiVersion = envParam.apiVersion	-- Current Job Plugin version
 
     local retCode
-    
+
     retCode = readConfigFile()
 
     -- Read tuning set file
     local readTuningSetStatus
-    readTuningSetStatus, tuningSetDataList = readTuningSet()
-    while (readTuningSetStatus ~= 0) do -- tuning set has been initialized
+    readTuningSetStatus, TUNING_SET_DATA_LIST = readTuningSet()
+    while (readTuningSetStatus ~= 0) do	-- tuning set has been initialized
         retCode = saveTuningSetFile()
         if retCode ~= 0 then
             return 0
         end
-        retCode = VSMessageBox("Setting file has been initialized.\n\"" .. dataFilePath .. configFn .. "\"\n\nDo you wanna continue?" , 1)
+        retCode = VSMessageBox("Setting file has been initialized.\n\"" .. DATA_FILE_PATH .. CONFIG_FN .. "\"\n\nDo you wanna continue?" , 1)
         if retCode ~= 1 then
             return 0
         end
-        readTuningSetStatus, tuningSetDataList = readTuningSet()
+        readTuningSetStatus, TUNING_SET_DATA_LIST = readTuningSet()
     end
 
     -- Select a tuning set on the dialog
@@ -115,7 +109,7 @@ function main(processParam, envParam)
     local title
     local offset
     local centList
-    retCode, title, offset, centList = getDataFromTuningSet(tuningSetDataList[tuningSetIndex], true)
+    retCode, title, offset, centList = getDataFromTuningSet(TUNING_SET_DATA_LIST[tuningSetIndex], true)
      if retCode ~= 0 then
          VSMessageBox("Error. Invalid tuning set:" .. retCode , 0)
          return 0
@@ -133,10 +127,10 @@ function main(processParam, envParam)
     retCode = tuning(centList)
 
     -- Save setting to file
-    configDataList["skipConfirmationDlg"] = skipConfirmationDlg
+    CONFIG_DATA_LIST["skipConfirmationDlg"] = skipConfirmationDlg
     retCode = saveConfigFile()
     retCode = saveTuningSetFile(tuningSetIndex)
-    
+
     return retCode
 end
 
@@ -152,9 +146,9 @@ function getTuningSetFieldVal()
     local title
     local offset
     local centList = {}
-    
-    for idx = 1, #tuningSetDataList, 1 do
-        local line = tuningSetDataList[idx]
+
+    for idx = 1, #TUNING_SET_DATA_LIST, 1 do
+        local line = TUNING_SET_DATA_LIST[idx]
         retCode, title, offset, centList = getDataFromTuningSet(line, false)
         if retCode ~= 0 then
             VSMessageBox("Error. Invalid tuningSet.\n" .. "#" .. idx .. " " .. line .. "\n" .. "Rreason:" .. retCode, 0)
@@ -167,7 +161,7 @@ function getTuningSetFieldVal()
             fieldVal = (idx > 1 and fieldVal .. "," or "") .. fieldValLine
          end
     end
-    
+
     return fieldVal
 end
 
@@ -182,7 +176,7 @@ function getDataFromTuningSet(tuningSetStr, useOffset)
         return 1
     end
     local tuningSet = split(tuningSetStr, ',')
-    if (tuningSet == nil) or (#tuningSetColumn ~= #tuningSet) then
+    if (tuningSet == nil) or (#tuningSet ~= #TUNING_SET_HEADER) then
         return 2
     end
     local offset = tonumber(tuningSet[2])
@@ -190,15 +184,14 @@ function getDataFromTuningSet(tuningSetStr, useOffset)
         return 3
     end
     local centList = {}
-    local cent
-    for i = 3, 14, 1 do
-        cent = tonumber(tuningSet[i])
+    for i = 1 , 12, 1 do
+        local cent = tonumber(tuningSet[#TUNING_SET_HEADER - 12 + i])
         if cent == nil then
             return 4
         end
         centList[#centList + 1] = (useOffset and offset or 0) + cent
     end
-    
+
     return 0, tuningSet[1], offset, centList
 end
 
@@ -208,10 +201,11 @@ end
 --*
 function getTuningSetIndex()
     local retCode
-    
-    VSDlgSetDialogTitle("Scale Tune Setting") -- Set the window title of the dialog
-    local tuningSetFieldVal = getTuningSetFieldVal() -- Get setting selection pull down contents
-    
+    local dlgStatus
+
+    VSDlgSetDialogTitle("Scale Tune Setting")	-- Set the window title of the dialog
+    local tuningSetFieldVal = getTuningSetFieldVal()	-- Get setting selection pull down contents
+
     -- Add fields to the dialog
     local field = {}
     field.name       = "selection"
@@ -219,13 +213,13 @@ function getTuningSetIndex()
     field.initialVal = tuningSetFieldVal
     field.type = 4
     dlgStatus  = VSDlgAddField(field)
-    
+
     field.name       = "skipConfirmationDlg"
     field.caption    = "Skip confirmation"
-    field.initialVal = tonumber(configDataList["skipConfirmationDlg"])
+    field.initialVal = tonumber(CONFIG_DATA_LIST["skipConfirmationDlg"])
     field.type       = 1
     dlgStatus = VSDlgAddField(field)
-    
+
     -- Get values from dialog
     dlgStatus = VSDlgDoModal()
     if  (dlgStatus ~= 1) then
@@ -252,22 +246,20 @@ end
 --* Returns: 0:Yes 1:No
 --*
 function showConfirmationDlg(title, offset, centList)
-    local confirmationResult
     local msgStr = "Perform scale tuning"
     .. " from " .. beginPosTick .. " to " .. endPosTick .. " ticks" .. " with this setting:\n\n"
     .. "\"" .. title .. "\"" .. "\n\n"
     .. "cent value difference from Equal Temperament:\n"
 
     local lineFormat = "%9s: %s\n"
-    local noteNameList = split(tuningSetNotes, ",")
     for n = 1, #centList, 1 do
-        msgStr = msgStr .. string.format(lineFormat, noteNameList[n], centList[n])
+        msgStr = msgStr .. string.format(lineFormat, TUNING_SET_HEADER[#TUNING_SET_HEADER - 12 + n], centList[n])
     end
 
     msgStr = msgStr .. "\n"
-    .. "setting file: "  .. dataFilePath .. configFn .. "\n"
+    .. "setting file: "  .. DATA_FILE_PATH .. CONFIG_FN .. "\n"
 
-    confirmationResult = VSMessageBox(msgStr, 1)
+    local confirmationResult = VSMessageBox(msgStr, 1)
 
     return (confirmationResult == 2) and 1 or 0
 end
@@ -306,7 +298,7 @@ function tuning(centList)
     end
 
     -- Insert PIT control at every notes
-    retCode = VSSeekToBeginControl("PIT") 
+    retCode = VSSeekToBeginControl("PIT")
     local lastPosTick = 0
     for i = 1, #noteExList, 1 do
         local cent = centList[(noteExList[i].noteNum % 12) + 1]
@@ -333,8 +325,7 @@ function insertPitControl(posTick, pit)
     control.posTick = posTick
     control.value = pit
     control.type = "PIT"
-    result = VSInsertControl(control)
-
+    local result = VSInsertControl(control)
     if (result ~= 1) then
         VSMessageBox("Couldn't add pitch bend control parameter. posTick=" .. posTick .. ", pit=" .. pit, 0)
         return 0
@@ -351,10 +342,10 @@ end
 function pitForCent(cent, pbs)
     local pit = 0
     if cent ~= 0 and pbs ~= 0 then
-        local unit_pit = pitMax / (100.0 * pbs)
-        pit = math.max(pitMin, math.min(pitMax, math.floor((unit_pit * cent) + 0.5)))
+        local unit_pit = 8191 / (100.0 * pbs)
+        pit = math.max(-8192, math.min(8191, math.floor((unit_pit * cent) + 0.5)))
     end
-    
+
     return pit
 end
 
@@ -364,14 +355,14 @@ end
 function readConfigFile()
     local retCode
     local added = 0
-    local f = io.open(dataFilePath .. configFn, "r")
+    local f = io.open(DATA_FILE_PATH .. CONFIG_FN, "r")
     if f then
         local line = f:read()
         while (line ~= nil) do
             if (trim(line) ~= "") and (string.sub(line, 1, 1) ~= "#") then
                 local list = split(line, ",", 1)
                 if (list ~= nil) and (#list == 2) then
-                    configDataList[list[1]] = list[2]
+                    CONFIG_DATA_LIST[list[1]] = list[2]
                     added = 1
                 end
             end
@@ -380,7 +371,7 @@ function readConfigFile()
     end
 
     if (added == 0) then
-        configDataList = configDefault
+        CONFIG_DATA_LIST = CONFIG_DEFAULT
     end
 
     return 0
@@ -390,9 +381,9 @@ end
 --* Save congig list to file
 --*
 function saveConfigFile()
-    local f = io.open(dataFilePath..configFn, "w")
+    local f = io.open(DATA_FILE_PATH..CONFIG_FN, "w")
 
-    for key, val in pairs(configDataList) do
+    for key, val in pairs(CONFIG_DATA_LIST) do
         if (f ~=  nil) then
             f:write(key .. "," .. val .."\n")
         end
@@ -414,9 +405,9 @@ end
 function readTuningSet()
     local retCode
     local dataList = {}
-    local f = io.open(dataFilePath .. tuningSetFn, "r")
+    local f = io.open(DATA_FILE_PATH .. TUNING_SET_FN, "r")
     if f then
-        f:read() -- skip header line
+        f:read()	-- skip header line
         local line = f:read()
         while (line ~= nil) do
             if (trim(line) ~= "") and (string.sub(line, 1, 1) ~= "#") then
@@ -425,9 +416,9 @@ function readTuningSet()
             line = f:read()
         end
     end
-    
+
     if (dataList == nil) or (#dataList == 0) then
-        return 1, dataListDefault
+        return 1, TUNING_SET_DATA_LIST_DEFAULT
     end
 
     return 0, dataList
@@ -438,19 +429,18 @@ end
 --* Param: index of selected tuningSet
 --*
 function saveTuningSetFile(indexToPutAtTheTop)
-    -- Move selected tuning set to the top of tuningSetDataList
-    if (indexToPutAtTheTop ~= nil) and (indexToPutAtTheTop > 1) and (indexToPutAtTheTop <= #tuningSetDataList) then
-        local tuningSetToPutAtTheTop = tuningSetDataList[indexToPutAtTheTop]
-        table.remove(tuningSetDataList, indexToPutAtTheTop)
-        table.insert(tuningSetDataList, 1, tuningSetToPutAtTheTop)
+    -- Move selected tuning set to the top of TUNING_SET_DATA_LIST
+    if (indexToPutAtTheTop ~= nil) and (indexToPutAtTheTop > 1) and (indexToPutAtTheTop <= #TUNING_SET_DATA_LIST) then
+        local tuningSetToPutAtTheTop = TUNING_SET_DATA_LIST[indexToPutAtTheTop]
+        table.remove(TUNING_SET_DATA_LIST, indexToPutAtTheTop)
+        table.insert(TUNING_SET_DATA_LIST, 1, tuningSetToPutAtTheTop)
     end
 
-    local f = io.open(dataFilePath..tuningSetFn, "w")
-    f:write(tuningSetHeadLine .. "\n") -- write header
-    
-    for i = 1, #tuningSetDataList, 1 do
-        if (f ~=  nil) and (trim(tuningSetDataList[i]) ~= "") then
-            f:write(tuningSetDataList[i] .. "\n")
+    local f = io.open(DATA_FILE_PATH..TUNING_SET_FN, "w")
+    f:write(table.concat(TUNING_SET_HEADER, ",") .. "\n")	-- write header
+    for i = 1, #TUNING_SET_DATA_LIST, 1 do
+        if (f ~=  nil) and (trim(TUNING_SET_DATA_LIST[i]) ~= "") then
+            f:write(TUNING_SET_DATA_LIST[i] .. "\n")
         end
     end
     if f == nil then
@@ -471,7 +461,7 @@ end
 --*
 function split(str, delimiter, maxDivNum)
     if maxDivNum == nil then
-        maxDivNum = 0    
+        maxDivNum = 0
     end
 
     local itemList = {}
@@ -499,6 +489,6 @@ end
 --* Trim string
 --*
 function trim(str)
- local p = str:find"%S"
- return p and str:match(".*%S", p) or ""
+    local p = str:find"%S"
+    return p and str:match(".*%S", p) or ""
 end
